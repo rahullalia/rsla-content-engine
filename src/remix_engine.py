@@ -1,7 +1,7 @@
 import anthropic
 
 class Remixer:
-    def __init__(self, api_key, model_name="claude-3-5-sonnet-20240620"):
+    def __init__(self, api_key, model_name="claude-sonnet-4-20250514"):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model_name
     
