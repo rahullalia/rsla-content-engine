@@ -766,6 +766,9 @@ if st.session_state.current_view == 'outliers':
     # Quick stats row
     creators = get_all_creators()
     all_vids = get_all_outliers(min_score=1.0, limit=1000)
+    yt_vids = [v for v in all_vids if v.get('platform', '').lower() == 'youtube']
+    ig_vids = [v for v in all_vids if v.get('platform', '').lower() == 'instagram']
+
     st.markdown(f"""
     <div style="display: flex; gap: 12px; margin: 16px 0 24px 0;">
         <span class="stat-badge">👥 {len(creators)} creators</span>
@@ -773,6 +776,14 @@ if st.session_state.current_view == 'outliers':
         <span class="stat-badge pulse">✨ {len([v for v in all_vids if v['outlier_score'] >= 3])} hot outliers</span>
     </div>
     """, unsafe_allow_html=True)
+
+    # Platform filter tabs
+    platform_filter = st.radio(
+        "Platform",
+        ["All", "YouTube", "Instagram"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
 
     # Controls
     col1, col2, col3 = st.columns([2, 1, 1])
@@ -788,8 +799,15 @@ if st.session_state.current_view == 'outliers':
 
     st.markdown("---")
 
-    # Get outliers
-    outliers = get_all_outliers(min_score=min_score, limit=limit)
+    # Get outliers and filter by platform
+    outliers = get_all_outliers(min_score=min_score, limit=limit * 2)  # Fetch more to filter
+
+    if platform_filter == "YouTube":
+        outliers = [v for v in outliers if v.get('platform', '').lower() == 'youtube'][:limit]
+    elif platform_filter == "Instagram":
+        outliers = [v for v in outliers if v.get('platform', '').lower() == 'instagram'][:limit]
+    else:
+        outliers = outliers[:limit]
 
     if not outliers:
         st.markdown("""
