@@ -26,16 +26,11 @@ ALLOWED_EMAILS = ["rahul@rsla.io", "siddharth@rsla.io"]
 
 def check_auth():
     """Check if user is authenticated with allowed email."""
-    # Check if running on Streamlit Cloud with auth
-    if hasattr(st, 'experimental_user') and st.experimental_user.email:
-        email = st.experimental_user.email
-        if email in ALLOWED_EMAILS or email.endswith("@rsla.io"):
-            return True, email
-        return False, email
-
-    # For local development or if auth not configured
-    # Check for password in secrets/env
-    auth_password = os.getenv("AUTH_PASSWORD") or st.secrets.get("AUTH_PASSWORD", "")
+    # Check for password-based auth (primary method on free tier)
+    try:
+        auth_password = st.secrets.get("AUTH_PASSWORD", "") or os.getenv("AUTH_PASSWORD", "")
+    except Exception:
+        auth_password = os.getenv("AUTH_PASSWORD", "")
 
     if auth_password:
         if 'authenticated' not in st.session_state:
@@ -44,6 +39,9 @@ def check_auth():
         if not st.session_state.authenticated:
             return False, None
 
+        return True, "authenticated"
+
+    # Fallback: allow if no password configured (local dev without .env)
     return True, "local"
 
 def show_login():
