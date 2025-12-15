@@ -1,6 +1,6 @@
 # Content Engine - Claude Context
 
-**Last Updated:** 2025-12-15 (API costs documented, linked from tools.rsla.io)
+**Last Updated:** 2025-12-15 (Instagram scraping via Apify working)
 
 ## Project Overview
 
@@ -30,14 +30,16 @@ Sandcastles.ai alternative for finding viral content outliers and remixing them.
 ```
 content_engine/
 ├── src/
-│   ├── app.py           # Streamlit UI with auth + 3 views
-│   ├── scraper.py       # yt-dlp + youtube_transcript_api
+│   ├── app.py           # Streamlit UI with auth + 3 views + platform filter
+│   ├── scraper.py       # YouTubeScraper, InstagramScraper (Apify), AssemblyAITranscriber
 │   ├── remix_engine.py  # Claude API (claude-sonnet-4-20250514)
-│   └── database.py      # SQLite storage
+│   ├── database.py      # SQLite storage + URL parsers + migrations
+│   └── import_csv.py    # Manual CSV import from Apify exports
 ├── data/
 │   └── content_engine.db  # Auto-created on Streamlit Cloud
 ├── .streamlit/
-│   └── config.toml      # RSL/A theme (dark mode)
+│   ├── config.toml           # RSL/A theme (dark mode)
+│   └── secrets.toml.example  # Template for Streamlit Cloud secrets
 ├── .env                 # Local dev only
 ├── requirements.txt
 └── README.md
@@ -51,13 +53,26 @@ content_engine/
 - **AI Remix:** Anthropic Claude API
 - **Voice:** Custom "Rahul Voice" system prompt
 
-## Platform Support Status (Dec 14, 2025)
+## Platform Support Status (Dec 15, 2025)
 
-| Platform | yt-dlp Extractor | Video Stats | Profile Scrape | Transcript |
-|----------|------------------|-------------|----------------|------------|
-| YouTube | ✅ Working | ✅ | ✅ | ✅ youtube_transcript_api |
-| TikTok | ⚠️ IP blocked | ❌ | ❌ | ❌ Need Whisper |
-| Instagram | ⚠️ Needs auth | ❌ | ❌ (BROKEN upstream) | ❌ Need Whisper |
+| Platform | Video Stats | Profile Scrape | Transcript |
+|----------|-------------|----------------|------------|
+| YouTube | ✅ yt-dlp | ✅ yt-dlp | ✅ youtube_transcript_api (free) |
+| Instagram | ✅ Apify | ✅ Apify | ✅ AssemblyAI (~$0.01-0.02/min) |
+| TikTok | ❌ | ❌ | ❌ (needs Apify + AssemblyAI) |
+
+### Instagram Integration (NEW)
+
+**Apify Instagram Reel Scraper:**
+- Actor ID: `apify~instagram-reel-scraper` (note: tilde, not slash!)
+- Cost: ~$0.0026/reel
+- Returns: caption, likes, comments, timestamp, thumbnail, videoUrl
+- API endpoint: `POST https://api.apify.com/v2/acts/apify~instagram-reel-scraper/run-sync-get-dataset-items`
+
+**AssemblyAI Transcription:**
+- Cost: ~$0.01-0.02 per minute of audio
+- Accepts direct video URLs from Apify
+- Polls for completion (3s intervals)
 
 ### yt-dlp Findings
 
@@ -167,12 +182,36 @@ At 100 remixes: ~$2-4 total cost.
 
 **Commits pushed:** 06e70cd, b39fb38, 8440dbe, 9bc40db, 17b8f9d, 2b2e0e5, fcf38fa
 
+## Session Log (Dec 15, 2025)
+
+**Completed:**
+- Added Instagram scraping via Apify (`apify~instagram-reel-scraper`)
+- Added AssemblyAI transcription for Instagram videos
+- Fixed Apify actor ID format (tilde vs slash)
+- Added platform filter tabs (All/YouTube/Instagram) to Outlier Feed
+- Added sidebar API token inputs for Apify and AssemblyAI
+- Added `video_url` column to videos table with migration
+- Created `import_csv.py` for manual CSV imports from Apify exports
+- Imported 90 reels (nick_saraev, heytony.agency, jasperhighlevel) to local DB
+
+**Key Bug Fix:**
+- Actor ID must use tilde: `apify~instagram-reel-scraper` NOT `apify/instagram-reel-scraper`
+
+**Commits pushed:** cb8b895, a2c56e9, 0cdb6ad, b2912c0
+
+**API Keys (in Streamlit Secrets):**
+- `APIFY_API_TOKEN` - For Instagram scraping
+- `ASSEMBLYAI_API_KEY` - For Instagram transcription
+- `ANTHROPIC_API_KEY` - For content remixing
+
 ## Next Session TODO
 
-1. **Add Apify integration** for TikTok/Instagram profile scraping
-2. **Add Whisper transcription** (local or API) for non-YouTube
-3. **Test end-to-end** with real TikTok/IG creator profiles
-4. **Consider cloud database** if SQLite persistence becomes an issue
+1. ~~**Add Apify integration** for Instagram profile scraping~~ ✅ DONE
+2. ~~**Add AssemblyAI transcription** for Instagram~~ ✅ DONE
+3. **Add TikTok support** - needs Apify TikTok scraper
+4. **Add CSV upload to Streamlit app** - for manual imports to cloud DB
+5. **Consider cloud database** if SQLite persistence becomes an issue
+6. **Debug Matt's IG** - some accounts don't return reels (reason unknown)
 
 ## Related Files
 
