@@ -449,7 +449,7 @@ if st.session_state.current_view == 'outliers':
     with col2:
         limit = st.selectbox("Show", [25, 50, 100], index=0)
     with col3:
-        st.write("")  # Spacer to align button with other controls
+        st.markdown("<div style='height: 28px'></div>", unsafe_allow_html=True)
         if st.button("🔄 Sync All", use_container_width=True):
             sync_all_creators()
             st.rerun()
