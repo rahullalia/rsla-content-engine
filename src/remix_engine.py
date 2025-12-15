@@ -40,6 +40,15 @@ Rewrite the following transcript content into this style.
         Sends the transcript to Claude for rewriting.
         """
         try:
+            # Validate transcript before sending
+            if not transcript or len(transcript.strip()) < 50:
+                return "Error: Transcript is too short or empty. Please fetch the transcript first."
+
+            # Check for error messages from transcript fetch
+            error_indicators = ["Error fetching", "Transcripts are disabled", "No transcript found", "IP blocked"]
+            if any(indicator in transcript for indicator in error_indicators):
+                return f"Error: Could not get transcript - {transcript}"
+
             # Check length to avoid token limits equivalent
             if len(transcript) > 50000:
                 transcript = transcript[:50000] + "...[Truncated]"
