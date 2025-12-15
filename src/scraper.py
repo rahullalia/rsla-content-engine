@@ -30,10 +30,11 @@ else:
 class InstagramScraper:
     """
     Scrapes Instagram reels using Apify's Instagram Reel Scraper.
-    Cost: ~$2.60/1000 reels (metadata only, no transcripts)
+    Cost: ~$0.0026/reel (metadata only, no transcripts)
     """
 
-    APIFY_ACTOR_ID = "apify/instagram-reel-scraper"
+    # Note: Actor ID uses tilde (~) not slash (/)
+    APIFY_ACTOR_ID = "apify~instagram-reel-scraper"
     APIFY_API_BASE = "https://api.apify.com/v2"
 
     def __init__(self, api_token: str = None):
@@ -69,10 +70,21 @@ class InstagramScraper:
 
         try:
             print(f"Fetching {limit} reels from @{username}...")
-            response = requests.post(url, json=payload, headers=headers, params=params, timeout=120)
+            print(f"API URL: {url}")
+            print(f"Payload: {payload}")
+
+            response = requests.post(url, json=payload, headers=headers, params=params, timeout=300)
+
+            # Log response details for debugging
+            print(f"Response status: {response.status_code}")
+
+            if response.status_code != 200:
+                print(f"Error response: {response.text[:500]}")
+
             response.raise_for_status()
 
             data = response.json()
+            print(f"Got {len(data)} items from API")
 
             # Transform Apify response to our standard format
             reels = []
