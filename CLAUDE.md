@@ -1,28 +1,45 @@
 # Content Engine - Claude Context
 
-**Last Updated:** 2025-12-14
+**Last Updated:** 2025-12-14 (Streamlit Cloud deployment)
 
 ## Project Overview
 
-Local "Sandcastles.ai" alternative for finding viral content outliers and remixing them. Built with Antigravity (Google).
+Sandcastles.ai alternative for finding viral content outliers and remixing them. **Now deployed to Streamlit Cloud.**
+
+**Live URL:** https://rsla-content-engine.streamlit.app/
+**GitHub Repo:** https://github.com/rahullalia/rsla-content-engine (public, required for free tier)
 
 **Goal:** Analyze creator profiles across YouTube, TikTok, and Instagram to find viral outliers, get transcripts, and remix into short-form content.
+
+## Deployment & Authentication
+
+**Streamlit Cloud Setup:**
+- Viewer whitelist: Only specific emails can access (Sharing settings)
+- Password auth: `rsla2025content!` (stored in Streamlit Secrets)
+- Session persistence: 24-hour URL tokens survive page refresh
+- Secrets configured: `AUTH_PASSWORD`, `ANTHROPIC_API_KEY`
+
+**Authentication Flow:**
+1. Streamlit checks if user email is whitelisted
+2. User enters password
+3. Session token added to URL (`?session=...`)
+4. Token valid for 24 hours, checked against time-bucket hash
 
 ## Current Architecture
 
 ```
 content_engine/
 ├── src/
-│   ├── app.py           # Streamlit UI
-│   ├── scraper.py       # yt-dlp wrapper for video metadata
-│   └── remix_engine.py  # Claude API integration with voice guidelines
-├── tests/
-│   ├── test_scraper.py
-│   └── test_remix.py
-├── docs/
-│   ├── task.md          # Development checklist
-│   ├── walkthrough.md   # Feature documentation
-│   └── implementation_plan.md
+│   ├── app.py           # Streamlit UI with auth + 3 views
+│   ├── scraper.py       # yt-dlp + youtube_transcript_api
+│   ├── remix_engine.py  # Claude API (claude-sonnet-4-20250514)
+│   └── database.py      # SQLite storage
+├── data/
+│   └── content_engine.db  # Auto-created on Streamlit Cloud
+├── .streamlit/
+│   └── config.toml      # RSL/A theme (dark mode)
+├── .env                 # Local dev only
+├── requirements.txt
 └── README.md
 ```
 
@@ -112,12 +129,34 @@ pip install streamlit yt-dlp youtube_transcript_api anthropic
 python3 -m streamlit run src/app.py
 ```
 
+## Known Issues
+
+1. **YouTube transcript IP blocking:** Streamlit Cloud IPs may be blocked by YouTube. Transcripts work for most videos but some fail. "Re-fetch Transcript" button added for retries.
+
+2. **SQLite data persistence:** Streamlit Cloud may reset data on redeploy or container restart. For critical data, consider migrating to Supabase/PlanetScale.
+
+3. **Model updates:** Using `claude-sonnet-4-20250514`. If deprecated, update in `remix_engine.py`.
+
+## Session Log (Dec 14, 2025)
+
+**Completed:**
+- Deployed to Streamlit Cloud
+- Fixed auth error (`st.experimental_user.email` doesn't exist on free tier)
+- Fixed Claude model (updated to `claude-sonnet-4-20250514`)
+- Added transcript validation before remix
+- Fixed API key retrieval from `st.secrets`
+- Added "Re-fetch Transcript" button for failed fetches
+- Fixed Sync All button alignment (28px spacer)
+- Added 24-hour session persistence via URL token
+
+**Commits pushed:** 06e70cd, b39fb38, 8440dbe, 9bc40db, 17b8f9d, 2b2e0e5, fcf38fa
+
 ## Next Session TODO
 
 1. **Add Apify integration** for TikTok/Instagram profile scraping
 2. **Add Whisper transcription** (local or API) for non-YouTube
 3. **Test end-to-end** with real TikTok/IG creator profiles
-4. **Plan conversion** to static HTML/JS for tools platform
+4. **Consider cloud database** if SQLite persistence becomes an issue
 
 ## Related Files
 

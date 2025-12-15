@@ -1,14 +1,23 @@
 # 🏰 Content Engine
 
-Local Sandcastles.ai alternative for finding viral content outliers and remixing them.
+Sandcastles.ai alternative for finding viral content outliers and remixing them.
 
 ## Status
-- **Version:** v0.5 (Full watchlist + outlier feed)
+- **Version:** v1.0 (Deployed to Streamlit Cloud)
 - **Last Updated:** Dec 14, 2025
+- **Live URL:** https://rsla-content-engine.streamlit.app/
 - **YouTube:** ✅ Fully working
 - **TikTok/IG:** 🔒 Pending (needs Apify)
 
-## Quick Start
+## Access
+
+**Production (Streamlit Cloud):**
+1. Visit https://rsla-content-engine.streamlit.app/
+2. Sign in with whitelisted Google account
+3. Enter password: `rsla2025content!`
+4. Session persists for 24 hours
+
+**Local Development:**
 
 ```bash
 cd content_engine
