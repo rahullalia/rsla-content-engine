@@ -569,16 +569,32 @@ if 'scraper' not in st.session_state:
     st.session_state.scraper = YouTubeScraper()
 
 # Initialize Instagram scraper if API token available
-def get_instagram_scraper():
+def get_instagram_scraper(manual_token: str = None):
     """Get Instagram scraper instance if Apify token is available."""
-    try:
-        apify_token = st.secrets.get("APIFY_API_TOKEN", "") or os.getenv("APIFY_API_TOKEN", "")
-        if apify_token:
-            return InstagramScraper(apify_token)
-    except Exception:
+    apify_token = manual_token  # Use manually passed token first
+
+    # Try Streamlit secrets (for Streamlit Cloud)
+    if not apify_token:
+        try:
+            apify_token = st.secrets.get("APIFY_API_TOKEN", "")
+        except Exception:
+            pass
+
+    # Fall back to environment variable (for local dev)
+    if not apify_token:
         apify_token = os.getenv("APIFY_API_TOKEN", "")
-        if apify_token:
+
+    # Check session state for sidebar-entered token
+    if not apify_token and 'apify_token_input' in st.session_state:
+        apify_token = st.session_state.apify_token_input
+
+    if apify_token:
+        try:
             return InstagramScraper(apify_token)
+        except Exception as e:
+            st.error(f"Failed to initialize Instagram scraper: {e}")
+            return None
+
     return None
 
 def get_assemblyai_transcriber():
@@ -635,8 +651,12 @@ with st.sidebar:
         apify_token = st.text_input(
             "Apify API Token",
             type="password",
-            help="For Instagram scraping (~$0.003/reel)"
+            help="For Instagram scraping (~$0.003/reel)",
+            key="apify_token_input"
         )
+    # Store in session state for use by sync functions
+    if apify_token:
+        st.session_state.apify_token_input = apify_token
 
     # AssemblyAI API Key for transcription
     try:
@@ -714,32 +734,51 @@ def sync_creator(creator_id: int, limit: int = 30):
     """Sync videos for a creator (YouTube or Instagram)."""
     creator = get_creator_by_id(creator_id)
     if not creator:
+        st.error("Creator not found")
         return False
 
     platform = creator.get('platform', 'youtube').lower()
 
-    with st.spinner(f"Syncing {creator['display_name']}..."):
+    with st.spinner(f"Syncing {creator['display_name']} ({platform})..."):
         if platform == 'instagram':
             # Use Instagram scraper (Apify)
-            ig_scraper = get_instagram_scraper()
-            if not ig_scraper:
-                st.error("Apify API token required for Instagram. Add it in the sidebar.")
-                return False
+            try:
+                ig_scraper = get_instagram_scraper()
+                if not ig_scraper:
+                    st.error("❌ Apify API token required for Instagram. Add it in the sidebar or configure in Streamlit secrets.")
+                    return False
 
-            videos = ig_scraper.get_reels(creator['username'], limit=limit)
-            if videos:
-                analyzed = ig_scraper.calculate_outliers(videos)
-                upsert_videos(creator_id, analyzed)
-                return True
+                st.info(f"📡 Fetching reels from @{creator['username']}...")
+                videos = ig_scraper.get_reels(creator['username'], limit=limit)
+
+                if videos:
+                    st.info(f"✅ Got {len(videos)} reels, calculating outliers...")
+                    analyzed = ig_scraper.calculate_outliers(videos)
+                    upsert_videos(creator_id, analyzed)
+                    st.success(f"✅ Synced {len(videos)} reels from @{creator['username']}")
+                    return True
+                else:
+                    st.warning(f"⚠️ No reels found for @{creator['username']}. Check if the username is correct.")
+                    return False
+            except Exception as e:
+                st.error(f"❌ Instagram sync error: {str(e)}")
+                return False
         else:
             # Use YouTube scraper
-            scraper = st.session_state.scraper
-            videos = scraper.get_channel_videos(creator['url'], limit=limit)
-            if videos:
-                analyzed = scraper.calculate_outliers(videos)
-                upsert_videos(creator_id, analyzed)
-                return True
-    return False
+            try:
+                scraper = st.session_state.scraper
+                videos = scraper.get_channel_videos(creator['url'], limit=limit)
+                if videos:
+                    analyzed = scraper.calculate_outliers(videos)
+                    upsert_videos(creator_id, analyzed)
+                    st.success(f"✅ Synced {len(videos)} videos from {creator['display_name']}")
+                    return True
+                else:
+                    st.warning(f"⚠️ No videos found for {creator['display_name']}")
+                    return False
+            except Exception as e:
+                st.error(f"❌ YouTube sync error: {str(e)}")
+                return False
 
 def sync_all_creators():
     """Sync all creators in watchlist."""

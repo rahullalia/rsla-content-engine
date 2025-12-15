@@ -1,6 +1,6 @@
 # Content Engine - Claude Context
 
-**Last Updated:** 2025-12-14 (Streamlit Cloud deployment)
+**Last Updated:** 2025-12-15 (API costs documented, linked from tools.rsla.io)
 
 ## Project Overview
 
@@ -136,6 +136,22 @@ python3 -m streamlit run src/app.py
 2. **SQLite data persistence:** Streamlit Cloud may reset data on redeploy or container restart. For critical data, consider migrating to Supabase/PlanetScale.
 
 3. **Model updates:** Using `claude-sonnet-4-20250514`. If deprecated, update in `remix_engine.py`.
+
+## API Costs
+
+**Per remix/regenerate operation: ~$0.02-0.04**
+
+| Component | Tokens | Cost |
+|-----------|--------|------|
+| System prompt (VoiceDNA) | ~2,000 | - |
+| Transcript input | ~2,000-5,000 | - |
+| Output (max) | 1,024 | - |
+| **Input total** | ~4,000-7,000 | ~$0.012-0.021 |
+| **Output total** | ~500-1,000 | ~$0.0075-0.015 |
+
+**Claude Sonnet pricing:** Input $3/1M tokens, Output $15/1M tokens
+
+At 100 remixes: ~$2-4 total cost.
 
 ## Session Log (Dec 14, 2025)
 
