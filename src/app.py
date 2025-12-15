@@ -320,17 +320,30 @@ with st.sidebar:
     # API Keys
     st.subheader("🔑 API Keys")
 
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY") or st.text_input(
-        "Anthropic API Key",
-        type="password",
-        help="For remixing content"
-    )
+    # Try secrets first (Streamlit Cloud), then env vars (local), then manual input
+    try:
+        anthropic_key = st.secrets.get("ANTHROPIC_API_KEY", "") or os.getenv("ANTHROPIC_API_KEY", "")
+    except Exception:
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
 
-    openai_key = os.getenv("OPENAI_API_KEY") or st.text_input(
-        "OpenAI API Key",
-        type="password",
-        help="For Whisper transcription (TikTok/IG)"
-    )
+    if not anthropic_key:
+        anthropic_key = st.text_input(
+            "Anthropic API Key",
+            type="password",
+            help="For remixing content"
+        )
+
+    try:
+        openai_key = st.secrets.get("OPENAI_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
+    except Exception:
+        openai_key = os.getenv("OPENAI_API_KEY", "")
+
+    if not openai_key:
+        openai_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            help="For Whisper transcription (TikTok/IG)"
+        )
 
     st.markdown("---")
 
