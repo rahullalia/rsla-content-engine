@@ -8,22 +8,94 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
+# Load environment variables first
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+# Page config must be first Streamlit command
+st.set_page_config(
+    page_title="Content Engine",
+    page_icon="🏰",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ============================================
+# AUTHENTICATION - @rsla.io only
+# ============================================
+ALLOWED_EMAILS = ["rahul@rsla.io", "siddharth@rsla.io"]
+
+def check_auth():
+    """Check if user is authenticated with allowed email."""
+    # Check if running on Streamlit Cloud with auth
+    if hasattr(st, 'experimental_user') and st.experimental_user.email:
+        email = st.experimental_user.email
+        if email in ALLOWED_EMAILS or email.endswith("@rsla.io"):
+            return True, email
+        return False, email
+
+    # For local development or if auth not configured
+    # Check for password in secrets/env
+    auth_password = os.getenv("AUTH_PASSWORD") or st.secrets.get("AUTH_PASSWORD", "")
+
+    if auth_password:
+        if 'authenticated' not in st.session_state:
+            st.session_state.authenticated = False
+
+        if not st.session_state.authenticated:
+            return False, None
+
+    return True, "local"
+
+def show_login():
+    """Show login form for password auth."""
+    st.markdown("""
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            background: #111;
+            border-radius: 12px;
+            border: 1px solid #222;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("### 🔒 Content Engine")
+        st.caption("Enter password to continue")
+
+        password = st.text_input("Password", type="password")
+
+        if st.button("Login", type="primary", use_container_width=True):
+            auth_password = os.getenv("AUTH_PASSWORD") or st.secrets.get("AUTH_PASSWORD", "")
+            if password == auth_password:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Invalid password")
+
+# Check authentication
+is_authed, user_email = check_auth()
+
+if not is_authed:
+    if user_email:
+        # User logged in but not authorized
+        st.error(f"Access denied. {user_email} is not authorized.")
+        st.stop()
+    else:
+        # Show password login
+        show_login()
+        st.stop()
+
+# Import app modules after auth check
 from scraper import YouTubeScraper
 from remix_engine import Remixer
 from database import (
     add_creator, remove_creator, get_all_creators, get_creator_by_id,
     upsert_videos, get_videos_for_creator, get_all_outliers, get_video_by_id,
     save_transcript, save_remix, parse_youtube_url
-)
-
-# Load environment variables
-load_dotenv(Path(__file__).parent.parent / ".env")
-
-st.set_page_config(
-    page_title="Content Engine",
-    page_icon="🏰",
-    layout="wide",
-    initial_sidebar_state="expanded"
 )
 
 # ============================================
