@@ -412,6 +412,7 @@ if st.session_state.current_view == 'outliers':
     with col2:
         limit = st.selectbox("Show", [25, 50, 100], index=0)
     with col3:
+        st.write("")  # Spacer to align button with other controls
         if st.button("🔄 Sync All", use_container_width=True):
             sync_all_creators()
             st.rerun()
@@ -582,11 +583,17 @@ elif st.session_state.current_view == 'remix':
         with col_trans:
             st.subheader("📝 Transcript")
 
-            if video.get('transcript'):
-                transcript = video['transcript']
-                st.text_area("Original", value=transcript, height=400, disabled=True)
+            transcript_text = video.get('transcript', '')
+            has_error = transcript_text and any(err in transcript_text for err in ["Error", "disabled", "No transcript"])
+
+            if transcript_text and not has_error:
+                st.text_area("Original", value=transcript_text, height=400, disabled=True)
             else:
-                if st.button("Fetch Transcript", type="primary"):
+                if transcript_text and has_error:
+                    st.warning(transcript_text)
+
+                btn_label = "🔄 Re-fetch Transcript" if has_error else "Fetch Transcript"
+                if st.button(btn_label, type="primary"):
                     scraper = st.session_state.scraper
                     with st.spinner("Fetching transcript..."):
                         transcript = scraper.get_transcript(video['url'])
