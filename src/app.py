@@ -5,6 +5,8 @@ Find viral outliers from your watchlist and remix them.
 import streamlit as st
 import pandas as pd
 import os
+import hashlib
+import time
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -20,29 +22,63 @@ st.set_page_config(
 )
 
 # ============================================
-# AUTHENTICATION - @rsla.io only
+# AUTHENTICATION - with session persistence
 # ============================================
-ALLOWED_EMAILS = ["rahul@rsla.io", "siddharth@rsla.io"]
+SESSION_DURATION_HOURS = 24  # Session lasts 24 hours
+
+def get_auth_password():
+    """Get auth password from secrets or env."""
+    try:
+        return st.secrets.get("AUTH_PASSWORD", "") or os.getenv("AUTH_PASSWORD", "")
+    except Exception:
+        return os.getenv("AUTH_PASSWORD", "")
+
+def generate_session_token(password):
+    """Generate a time-based session token."""
+    # Token valid for SESSION_DURATION_HOURS
+    time_bucket = int(time.time() // (SESSION_DURATION_HOURS * 3600))
+    token_input = f"{password}:{time_bucket}"
+    return hashlib.sha256(token_input.encode()).hexdigest()[:32]
+
+def verify_session_token(token):
+    """Verify if session token is valid."""
+    auth_password = get_auth_password()
+    if not auth_password:
+        return True  # No password configured
+
+    # Check current time bucket
+    current_token = generate_session_token(auth_password)
+    if token == current_token:
+        return True
+
+    # Also check previous time bucket (for sessions created near boundary)
+    time_bucket_prev = int(time.time() // (SESSION_DURATION_HOURS * 3600)) - 1
+    token_input_prev = f"{auth_password}:{time_bucket_prev}"
+    prev_token = hashlib.sha256(token_input_prev.encode()).hexdigest()[:32]
+
+    return token == prev_token
 
 def check_auth():
-    """Check if user is authenticated with allowed email."""
-    # Check for password-based auth (primary method on free tier)
-    try:
-        auth_password = st.secrets.get("AUTH_PASSWORD", "") or os.getenv("AUTH_PASSWORD", "")
-    except Exception:
-        auth_password = os.getenv("AUTH_PASSWORD", "")
+    """Check if user is authenticated."""
+    auth_password = get_auth_password()
 
-    if auth_password:
-        if 'authenticated' not in st.session_state:
-            st.session_state.authenticated = False
+    # No password configured - allow access
+    if not auth_password:
+        return True, "local"
 
-        if not st.session_state.authenticated:
-            return False, None
+    # Check URL token first (persists across refreshes)
+    params = st.query_params
+    url_token = params.get("session", "")
 
+    if url_token and verify_session_token(url_token):
+        st.session_state.authenticated = True
         return True, "authenticated"
 
-    # Fallback: allow if no password configured (local dev without .env)
-    return True, "local"
+    # Check session state
+    if st.session_state.get('authenticated'):
+        return True, "authenticated"
+
+    return False, None
 
 def show_login():
     """Show login form for password auth."""
@@ -67,9 +103,12 @@ def show_login():
         password = st.text_input("Password", type="password")
 
         if st.button("Login", type="primary", use_container_width=True):
-            auth_password = os.getenv("AUTH_PASSWORD") or st.secrets.get("AUTH_PASSWORD", "")
+            auth_password = get_auth_password()
             if password == auth_password:
                 st.session_state.authenticated = True
+                # Set session token in URL for persistence
+                token = generate_session_token(auth_password)
+                st.query_params["session"] = token
                 st.rerun()
             else:
                 st.error("Invalid password")
@@ -79,11 +118,9 @@ is_authed, user_email = check_auth()
 
 if not is_authed:
     if user_email:
-        # User logged in but not authorized
         st.error(f"Access denied. {user_email} is not authorized.")
         st.stop()
     else:
-        # Show password login
         show_login()
         st.stop()
 
