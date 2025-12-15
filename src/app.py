@@ -14,9 +14,10 @@ from pathlib import Path
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 # Page config must be first Streamlit command
+# Using RSL/A brand favicon (blue square with white slash)
 st.set_page_config(
-    page_title="Content Engine",
-    page_icon="🏰",
+    page_title="Content Engine | RSL/A",
+    page_icon="https://rsla.io/favicon.svg",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -84,25 +85,110 @@ def show_login():
     """Show login form for password auth."""
     st.markdown("""
     <style>
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 40px;
-            background: #111;
-            border-radius: 12px;
-            border: 1px solid #222;
+        @import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,900&display=swap');
+
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%);
+        }
+        .login-wrapper::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 112, 243, 0.2), transparent),
+                radial-gradient(ellipse 60% 40% at 50% 120%, rgba(0, 112, 243, 0.15), transparent);
+            pointer-events: none;
+        }
+        .login-card {
+            max-width: 380px;
+            margin: 0 auto;
+            padding: 48px 40px;
+            background: rgba(17, 17, 17, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 100px rgba(0, 112, 243, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+        .login-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        .login-logo .icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0070f3 0%, #0050c0 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 112, 243, 0.4);
+        }
+        .login-logo .icon::after {
+            content: '';
+            width: 8px;
+            height: 32px;
+            background: white;
+            transform: skewX(-20deg);
+        }
+        .login-logo .wordmark {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            color: white;
+        }
+        .login-logo .slash {
+            width: 7px;
+            height: 24px;
+            background: linear-gradient(180deg, #0070f3 0%, #00a0ff 100%);
+            transform: skewX(-20deg);
+            margin: 0 4px;
+            display: inline-block;
+            box-shadow: 0 0 15px rgba(0, 112, 243, 0.6);
+        }
+        .login-title {
+            text-align: center;
+            font-family: 'Satoshi', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 32px;
         }
     </style>
     """, unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("### 🔒 Content Engine")
-        st.caption("Enter password to continue")
+        st.markdown("""
+        <div class="login-logo">
+            <div class="icon"></div>
+            <div class="wordmark">RSL<span class="slash"></span>A</div>
+        </div>
+        <div class="login-title">Content Engine</div>
+        <div class="login-subtitle">Enter password to continue</div>
+        """, unsafe_allow_html=True)
 
-        password = st.text_input("Password", type="password")
+        password = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Enter password...")
 
-        if st.button("Login", type="primary", use_container_width=True):
+        if st.button("🔓 Unlock", type="primary", use_container_width=True):
             auth_password = get_auth_password()
             if password == auth_password:
                 st.session_state.authenticated = True
@@ -112,6 +198,9 @@ def show_login():
                 st.rerun()
             else:
                 st.error("Invalid password")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.caption("🔒 Secured with 24-hour session tokens")
 
 # Check authentication
 is_authed, user_email = check_auth()
@@ -134,7 +223,7 @@ from database import (
 )
 
 # ============================================
-# RSL/A BRAND STYLING
+# RSL/A BRAND STYLING - Enhanced UI
 # ============================================
 # Brand Colors: Blue #0070f3, Black #0a0a0a, White #ffffff
 # Fonts: Satoshi (display), Inter (body)
@@ -143,12 +232,28 @@ st.markdown("""
     @import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,900&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-    /* Base */
+    /* Base with subtle gradient */
     .stApp {
-        background-color: #0a0a0a;
+        background: linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 50%, #0a0a0a 100%);
+        background-attachment: fixed;
     }
     .block-container {
         padding-top: 2rem;
+    }
+
+    /* Animated gradient background effect */
+    .stApp::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+            radial-gradient(ellipse 80% 50% at 20% -20%, rgba(0, 112, 243, 0.15), transparent),
+            radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0, 112, 243, 0.1), transparent);
+        pointer-events: none;
+        z-index: 0;
     }
 
     /* Typography */
@@ -160,37 +265,47 @@ st.markdown("""
     h1 {
         font-size: 2.5rem !important;
         letter-spacing: -0.02em !important;
+        background: linear-gradient(135deg, #ffffff 0%, #0070f3 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
     /* Body text - avoid overriding span to preserve icon fonts */
     p, label, .stMarkdown > div {
         font-family: 'Inter', system-ui, sans-serif;
     }
 
-    /* Brand accent color */
+    /* Brand accent color - Primary buttons with glow */
     .stButton > button[kind="primary"] {
-        background-color: #0070f3 !important;
-        border-color: #0070f3 !important;
+        background: linear-gradient(135deg, #0070f3 0%, #0050c0 100%) !important;
+        border: none !important;
         font-family: 'Inter', sans-serif !important;
         font-weight: 600 !important;
+        box-shadow: 0 4px 14px rgba(0, 112, 243, 0.4) !important;
+        transition: all 0.3s ease !important;
     }
     .stButton > button[kind="primary"]:hover {
-        background-color: #0060d0 !important;
-        border-color: #0060d0 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(0, 112, 243, 0.5) !important;
     }
     .stButton > button[kind="secondary"] {
-        background-color: #111 !important;
+        background-color: rgba(17, 17, 17, 0.8) !important;
         border: 1px solid #333 !important;
         color: #999 !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s ease !important;
     }
     .stButton > button[kind="secondary"]:hover {
         border-color: #0070f3 !important;
         color: #fff !important;
+        box-shadow: 0 0 20px rgba(0, 112, 243, 0.2) !important;
     }
 
-    /* Outlier score colors */
+    /* Outlier score colors with glow */
     .outlier-high {
         color: #0070f3 !important;
         font-weight: bold;
+        text-shadow: 0 0 10px rgba(0, 112, 243, 0.5);
     }
     .outlier-medium {
         color: #60a5fa;
@@ -199,28 +314,36 @@ st.markdown("""
         color: #6b7280;
     }
 
-    /* Cards */
+    /* Glass Cards */
     .creator-card, .video-card {
-        background: #111;
-        border: 1px solid #222;
-        border-radius: 8px;
+        background: rgba(17, 17, 17, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
         padding: 16px;
         margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+    .creator-card:hover, .video-card:hover {
+        border-color: rgba(0, 112, 243, 0.5);
+        box-shadow: 0 8px 32px rgba(0, 112, 243, 0.1);
     }
 
-    /* Metric box with brand accent */
+    /* Metric box with brand accent and glow */
     .metric-box {
-        background: #111;
+        background: rgba(17, 17, 17, 0.8);
         border: 1px solid #0070f3;
-        border-radius: 8px;
+        border-radius: 12px;
         padding: 16px;
         text-align: center;
+        box-shadow: 0 0 30px rgba(0, 112, 243, 0.15);
     }
 
-    /* Sidebar styling */
+    /* Sidebar styling - glass effect */
     [data-testid="stSidebar"] {
-        background-color: #0d0d0d !important;
-        border-right: 1px solid #222 !important;
+        background: linear-gradient(180deg, rgba(13, 13, 13, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(20px) !important;
     }
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
@@ -228,42 +351,52 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* Input fields */
+    /* Input fields with glow on focus */
     .stTextInput > div > div > input {
-        background-color: #111 !important;
-        border: 1px solid #333 !important;
+        background-color: rgba(17, 17, 17, 0.8) !important;
+        border: 1px solid rgba(51, 51, 51, 0.8) !important;
         color: #fff !important;
         font-family: 'Inter', sans-serif !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
     }
     .stTextInput > div > div > input:focus {
         border-color: #0070f3 !important;
-        box-shadow: 0 0 0 1px #0070f3 !important;
+        box-shadow: 0 0 0 1px #0070f3, 0 0 20px rgba(0, 112, 243, 0.3) !important;
     }
 
     /* Select boxes */
     .stSelectbox > div > div {
-        background-color: #111 !important;
-        border: 1px solid #333 !important;
-    }
-
-    /* Expander */
-    .streamlit-expanderHeader {
-        background-color: #111 !important;
-        border: 1px solid #222 !important;
+        background-color: rgba(17, 17, 17, 0.8) !important;
+        border: 1px solid rgba(51, 51, 51, 0.8) !important;
         border-radius: 8px !important;
     }
 
-    /* Slider */
-    .stSlider > div > div > div > div {
-        background-color: #0070f3 !important;
+    /* Expander with glass effect */
+    .streamlit-expanderHeader {
+        background: rgba(17, 17, 17, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(10px) !important;
     }
 
-    /* Text areas */
+    /* Slider with glow */
+    .stSlider > div > div > div > div {
+        background: linear-gradient(90deg, #0070f3 0%, #00a0ff 100%) !important;
+        box-shadow: 0 0 10px rgba(0, 112, 243, 0.5) !important;
+    }
+
+    /* Text areas with glass effect */
     .stTextArea > div > div > textarea {
-        background-color: #111 !important;
-        border: 1px solid #333 !important;
+        background-color: rgba(17, 17, 17, 0.8) !important;
+        border: 1px solid rgba(51, 51, 51, 0.8) !important;
         color: #fff !important;
         font-family: 'Inter', sans-serif !important;
+        border-radius: 8px !important;
+    }
+    .stTextArea > div > div > textarea:focus {
+        border-color: #0070f3 !important;
+        box-shadow: 0 0 20px rgba(0, 112, 243, 0.2) !important;
     }
 
     /* Captions */
@@ -271,12 +404,76 @@ st.markdown("""
         color: #888 !important;
     }
 
-    /* Links */
+    /* Links with hover effect */
     a {
         color: #0070f3 !important;
+        transition: all 0.2s ease !important;
+    }
+    a:hover {
+        color: #00a0ff !important;
+        text-shadow: 0 0 10px rgba(0, 112, 243, 0.5) !important;
     }
 
-    /* RSL/A Logo in sidebar */
+    /* Divider styling */
+    hr {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        margin: 1.5rem 0 !important;
+    }
+
+    /* Image thumbnails with hover effect */
+    .stImage > img {
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+    }
+    .stImage > img:hover {
+        transform: scale(1.02) !important;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Progress bar styling */
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #0070f3 0%, #00a0ff 100%) !important;
+        box-shadow: 0 0 15px rgba(0, 112, 243, 0.5) !important;
+    }
+
+    /* Success/Warning/Info messages */
+    .stSuccess {
+        background: rgba(0, 200, 83, 0.1) !important;
+        border: 1px solid rgba(0, 200, 83, 0.3) !important;
+        border-radius: 8px !important;
+    }
+    .stWarning {
+        background: rgba(255, 193, 7, 0.1) !important;
+        border: 1px solid rgba(255, 193, 7, 0.3) !important;
+        border-radius: 8px !important;
+    }
+    .stInfo {
+        background: rgba(0, 112, 243, 0.1) !important;
+        border: 1px solid rgba(0, 112, 243, 0.3) !important;
+        border-radius: 8px !important;
+    }
+
+    /* Spinner styling */
+    .stSpinner > div {
+        border-top-color: #0070f3 !important;
+    }
+
+    /* Video card hover effect */
+    .video-row {
+        padding: 16px;
+        margin: 8px 0;
+        background: rgba(17, 17, 17, 0.4);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+    }
+    .video-row:hover {
+        background: rgba(17, 17, 17, 0.8);
+        border-color: rgba(0, 112, 243, 0.3);
+        transform: translateX(4px);
+    }
+
+    /* RSL/A Logo in sidebar with glow */
     .rsla-logo {
         display: flex;
         align-items: center;
@@ -286,12 +483,13 @@ st.markdown("""
     .rsla-logo .icon {
         width: 40px;
         height: 40px;
-        background: #0070f3;
+        background: linear-gradient(135deg, #0070f3 0%, #0050c0 100%);
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        box-shadow: 0 4px 15px rgba(0, 112, 243, 0.4);
     }
     .rsla-logo .icon::after {
         content: '';
@@ -312,10 +510,11 @@ st.markdown("""
     .rsla-logo .slash {
         width: 6px;
         height: 20px;
-        background: #0070f3;
+        background: linear-gradient(180deg, #0070f3 0%, #00a0ff 100%);
         transform: skewX(-20deg);
         margin: 0 3px;
         display: inline-block;
+        box-shadow: 0 0 10px rgba(0, 112, 243, 0.5);
     }
     .tool-label {
         font-family: 'Inter', sans-serif;
@@ -324,6 +523,37 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 1px;
         margin-top: 4px;
+    }
+
+    /* Stats badge */
+    .stat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 112, 243, 0.15);
+        border: 1px solid rgba(0, 112, 243, 0.3);
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 13px;
+        color: #0070f3;
+        font-weight: 600;
+    }
+
+    /* Animated pulse for live indicators */
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    .pulse {
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    /* Gradient text utility */
+    .gradient-text {
+        background: linear-gradient(135deg, #0070f3 0%, #00a0ff 50%, #0070f3 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -400,8 +630,41 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.caption("YouTube: ✅ Ready")
-    st.caption("TikTok/IG: 🔒 Need Apify")
+
+    # Platform status with better styling
+    st.markdown("""
+    <div style="margin-bottom: 16px;">
+        <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Platform Status</div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);"></span>
+                <span style="color: #ccc; font-size: 13px;">YouTube</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 8px; height: 8px; background: #666; border-radius: 50%;"></span>
+                <span style="color: #888; font-size: 13px;">TikTok (Apify)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 8px; height: 8px; background: #666; border-radius: 50%;"></span>
+                <span style="color: #888; font-size: 13px;">Instagram (Apify)</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Footer with link to rsla.io
+    st.markdown("""
+    <div style="text-align: center; padding: 8px 0;">
+        <a href="https://rsla.io" target="_blank" style="
+            color: #666 !important;
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.2s;
+        ">Built by RSL/A</a>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ============================================
 # MAIN CONTENT
@@ -439,8 +702,22 @@ def sync_all_creators():
 # VIEW: OUTLIER FEED
 # ============================================
 if st.session_state.current_view == 'outliers':
-    st.title("🔥 Outlier Feed")
+    # Header with stats
+    st.markdown("""
+    <h1 style="margin-bottom: 0;">🔥 Outlier Feed</h1>
+    """, unsafe_allow_html=True)
     st.caption("Top performing videos across your watchlist")
+
+    # Quick stats row
+    creators = get_all_creators()
+    all_vids = get_all_outliers(min_score=1.0, limit=1000)
+    st.markdown(f"""
+    <div style="display: flex; gap: 12px; margin: 16px 0 24px 0;">
+        <span class="stat-badge">👥 {len(creators)} creators</span>
+        <span class="stat-badge">📹 {len(all_vids)} videos</span>
+        <span class="stat-badge pulse">✨ {len([v for v in all_vids if v['outlier_score'] >= 3])} hot outliers</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Controls
     col1, col2, col3 = st.columns([2, 1, 1])
@@ -460,12 +737,35 @@ if st.session_state.current_view == 'outliers':
     outliers = get_all_outliers(min_score=min_score, limit=limit)
 
     if not outliers:
-        st.info("No outliers found. Add creators to your watchlist and sync them first!")
+        st.markdown("""
+        <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+            <h3 style="color: #fff; margin-bottom: 8px;">No outliers found</h3>
+            <p style="color: #888;">Add creators to your watchlist and sync them first!</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         # Display as cards
-        for video in outliers:
+        for i, video in enumerate(outliers):
             score = video['outlier_score']
-            score_class = 'outlier-high' if score >= 3 else 'outlier-medium' if score >= 2 else 'outlier-low'
+
+            # Determine score styling
+            if score >= 4:
+                score_color = "#ff6b6b"
+                score_glow = "0 0 20px rgba(255, 107, 107, 0.5)"
+                score_label = "🔥 VIRAL"
+            elif score >= 3:
+                score_color = "#0070f3"
+                score_glow = "0 0 15px rgba(0, 112, 243, 0.5)"
+                score_label = "⚡ HOT"
+            elif score >= 2:
+                score_color = "#60a5fa"
+                score_glow = "none"
+                score_label = "📈 RISING"
+            else:
+                score_color = "#6b7280"
+                score_glow = "none"
+                score_label = ""
 
             col_thumb, col_info, col_actions = st.columns([1, 3, 1])
 
@@ -476,22 +776,48 @@ if st.session_state.current_view == 'outliers':
             with col_info:
                 st.markdown(f"**{video['title'][:80]}{'...' if len(video.get('title', '')) > 80 else ''}**")
                 st.caption(f"@{video['username']} • {video['platform'].upper()}")
-                st.markdown(f"<span class='{score_class}'>{score}x</span> • {video.get('view_count', 0):,} views", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                    <span style="
+                        font-size: 18px;
+                        font-weight: 700;
+                        color: {score_color};
+                        text-shadow: {score_glow};
+                    ">{score}x</span>
+                    <span style="color: #888;">•</span>
+                    <span style="color: #ccc;">{video.get('view_count', 0):,} views</span>
+                    {f'<span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: {score_color};">{score_label}</span>' if score_label else ''}
+                </div>
+                """, unsafe_allow_html=True)
 
             with col_actions:
-                if st.button("Remix →", key=f"remix_{video['id']}"):
+                st.markdown("<div style='height: 16px'></div>", unsafe_allow_html=True)
+                if st.button("✨ Remix", key=f"remix_{video['id']}", type="primary"):
                     st.session_state.selected_video_id = video['id']
                     st.session_state.current_view = 'remix'
                     st.rerun()
 
-            st.markdown("---")
+            if i < len(outliers) - 1:
+                st.markdown("<hr style='border-color: rgba(255,255,255,0.05); margin: 16px 0;'>", unsafe_allow_html=True)
 
 # ============================================
 # VIEW: WATCHLIST
 # ============================================
 elif st.session_state.current_view == 'watchlist':
-    st.title("👥 Watchlist")
+    st.markdown("""
+    <h1 style="margin-bottom: 0;">👥 Watchlist</h1>
+    """, unsafe_allow_html=True)
     st.caption("Creators you're tracking")
+
+    # Stats
+    creators = get_all_creators()
+    total_videos = sum(c.get('video_count') or 0 for c in creators)
+    st.markdown(f"""
+    <div style="display: flex; gap: 12px; margin: 16px 0 24px 0;">
+        <span class="stat-badge">👥 {len(creators)} creators</span>
+        <span class="stat-badge">📹 {total_videos} videos tracked</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Add Creator Form
     with st.expander("➕ Add Creator", expanded=True):
@@ -506,7 +832,7 @@ elif st.session_state.current_view == 'watchlist':
         with col2:
             st.write("")  # Spacer
             st.write("")
-            add_btn = st.button("Add to Watchlist", type="primary", use_container_width=True)
+            add_btn = st.button("➕ Add", type="primary", use_container_width=True)
 
         if add_btn and new_url:
             platform, username, clean_url = parse_youtube_url(new_url)
@@ -521,26 +847,42 @@ elif st.session_state.current_view == 'watchlist':
     st.markdown("---")
 
     # List Creators
-    creators = get_all_creators()
-
     if not creators:
-        st.info("Your watchlist is empty. Add some creators above!")
+        st.markdown("""
+        <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+            <h3 style="color: #fff; margin-bottom: 8px;">Your watchlist is empty</h3>
+            <p style="color: #888;">Add some creators above to start tracking viral content!</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         for creator in creators:
+            st.markdown(f"""
+            <div style="
+                background: rgba(17, 17, 17, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                padding: 16px 20px;
+                margin-bottom: 12px;
+            ">
+            </div>
+            """, unsafe_allow_html=True)
+
             col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
 
             with col1:
-                st.markdown(f"**{creator['display_name']}**")
+                platform_icon = "📺" if creator['platform'] == 'youtube' else "📱"
+                st.markdown(f"**{platform_icon} {creator['display_name']}**")
                 st.caption(f"@{creator['username']} • {creator['platform'].upper()} • {creator['video_count'] or 0} videos")
 
             with col2:
                 if creator.get('last_synced'):
-                    st.caption(f"Synced: {creator['last_synced'][:10]}")
+                    st.caption(f"🕐 {creator['last_synced'][:10]}")
                 else:
-                    st.caption("Never synced")
+                    st.caption("⏳ Never synced")
 
             with col3:
-                if st.button("🔄", key=f"sync_{creator['id']}", help="Sync videos"):
+                if st.button("🔄 Sync", key=f"sync_{creator['id']}", help="Sync videos"):
                     sync_creator(creator['id'])
                     st.rerun()
 
@@ -552,17 +894,35 @@ elif st.session_state.current_view == 'watchlist':
             # Show top videos for this creator
             videos = get_videos_for_creator(creator['id'], limit=5)
             if videos:
-                with st.expander(f"Top {len(videos)} videos"):
+                with st.expander(f"📊 Top {len(videos)} videos"):
                     for v in videos:
-                        st.markdown(f"**{v['outlier_score']}x** | {v['title'][:60]}... | {v.get('view_count', 0):,} views")
+                        score = v['outlier_score']
+                        score_color = "#ff6b6b" if score >= 4 else "#0070f3" if score >= 3 else "#60a5fa" if score >= 2 else "#6b7280"
+                        st.markdown(f"""
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <span style="color: {score_color}; font-weight: 700; min-width: 40px;">{score}x</span>
+                            <span style="color: #ccc; flex: 1;">{v['title'][:55]}...</span>
+                            <span style="color: #888; font-size: 12px;">{v.get('view_count', 0):,}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-            st.markdown("---")
+            st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
 
 # ============================================
 # VIEW: REMIX STUDIO
 # ============================================
 elif st.session_state.current_view == 'remix':
-    st.title("✨ Remix Studio")
+    st.markdown("""
+    <h1 style="margin-bottom: 0;">✨ Remix Studio</h1>
+    """, unsafe_allow_html=True)
+    st.caption("Transform viral content into your authentic voice")
+
+    st.markdown("""
+    <div style="display: flex; gap: 12px; margin: 16px 0 24px 0;">
+        <span class="stat-badge">🎯 Powered by Claude</span>
+        <span class="stat-badge">🎤 Your VoiceDNA loaded</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Video selection
     col1, col2 = st.columns([2, 1])
@@ -618,19 +978,24 @@ elif st.session_state.current_view == 'remix':
         col_trans, col_remix = st.columns(2)
 
         with col_trans:
-            st.subheader("📝 Transcript")
+            st.markdown("""
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                <span style="font-size: 20px;">📝</span>
+                <span style="font-size: 18px; font-weight: 600; color: white;">Transcript</span>
+            </div>
+            """, unsafe_allow_html=True)
 
             transcript_text = video.get('transcript', '')
             has_error = transcript_text and any(err in transcript_text for err in ["Error", "disabled", "No transcript"])
 
             if transcript_text and not has_error:
-                st.text_area("Original", value=transcript_text, height=400, disabled=True)
+                st.text_area("Original", value=transcript_text, height=400, disabled=True, label_visibility="collapsed")
             else:
                 if transcript_text and has_error:
                     st.warning(transcript_text)
 
-                btn_label = "🔄 Re-fetch Transcript" if has_error else "Fetch Transcript"
-                if st.button(btn_label, type="primary"):
+                btn_label = "🔄 Re-fetch Transcript" if has_error else "📥 Fetch Transcript"
+                if st.button(btn_label, type="primary", use_container_width=True):
                     scraper = st.session_state.scraper
                     with st.spinner("Fetching transcript..."):
                         transcript = scraper.get_transcript(video['url'])
@@ -638,13 +1003,18 @@ elif st.session_state.current_view == 'remix':
                         st.rerun()
 
         with col_remix:
-            st.subheader("✨ Remixed Version")
+            st.markdown("""
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                <span style="font-size: 20px;">✨</span>
+                <span style="font-size: 18px; font-weight: 600; background: linear-gradient(135deg, #0070f3, #00a0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Your Version</span>
+            </div>
+            """, unsafe_allow_html=True)
 
             transcript_to_remix = video.get('transcript') or st.session_state.get('direct_transcript')
 
             if transcript_to_remix and anthropic_key:
                 if st.button("🪄 Remix in My Voice", type="primary", use_container_width=True):
-                    with st.spinner("Remixing with Claude..."):
+                    with st.spinner("✨ Claude is writing in your voice..."):
                         remixer = Remixer(anthropic_key)
                         remixed = remixer.remix_content(transcript_to_remix)
                         st.session_state.remixed_content = remixed
@@ -657,17 +1027,52 @@ elif st.session_state.current_view == 'remix':
                         "Your Version",
                         value=st.session_state.remixed_content,
                         height=400,
-                        key="remix_output"
+                        key="remix_output",
+                        label_visibility="collapsed"
                     )
-                    st.download_button(
-                        "📋 Copy to Clipboard",
-                        st.session_state.remixed_content,
-                        file_name="remixed_post.txt"
-                    )
+                    col_copy, col_download = st.columns(2)
+                    with col_copy:
+                        st.download_button(
+                            "📋 Download",
+                            st.session_state.remixed_content,
+                            file_name="remixed_post.txt",
+                            use_container_width=True
+                        )
+                    with col_download:
+                        if st.button("🔄 Regenerate", use_container_width=True):
+                            with st.spinner("✨ Regenerating..."):
+                                remixer = Remixer(anthropic_key)
+                                remixed = remixer.remix_content(transcript_to_remix)
+                                st.session_state.remixed_content = remixed
+                                if video:
+                                    save_remix(video['id'], remixed)
+                                st.rerun()
             elif not anthropic_key:
-                st.warning("Enter Anthropic API key in sidebar to enable remixing")
+                st.markdown("""
+                <div style="
+                    background: rgba(255, 193, 7, 0.1);
+                    border: 1px solid rgba(255, 193, 7, 0.3);
+                    border-radius: 8px;
+                    padding: 16px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🔑</div>
+                    <div style="color: #ffc107;">Enter Anthropic API key in sidebar</div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.info("Fetch transcript first, then remix")
+                st.markdown("""
+                <div style="
+                    background: rgba(0, 112, 243, 0.1);
+                    border: 1px solid rgba(0, 112, 243, 0.3);
+                    border-radius: 8px;
+                    padding: 16px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 24px; margin-bottom: 8px;">📝</div>
+                    <div style="color: #0070f3;">Fetch transcript first, then remix</div>
+                </div>
+                """, unsafe_allow_html=True)
 
     elif 'direct_transcript' in st.session_state:
         # Direct URL mode
