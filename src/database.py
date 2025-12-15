@@ -15,7 +15,25 @@ def get_connection():
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     create_tables(conn)
+    migrate_database(conn)
     return conn
+
+
+def migrate_database(conn):
+    """Run database migrations for schema updates."""
+    cursor = conn.cursor()
+
+    # Check if video_url column exists in videos table
+    cursor.execute("PRAGMA table_info(videos)")
+    columns = [col[1] for col in cursor.fetchall()]
+
+    if 'video_url' not in columns:
+        try:
+            cursor.execute("ALTER TABLE videos ADD COLUMN video_url TEXT")
+            conn.commit()
+            print("Migration: Added video_url column to videos table")
+        except sqlite3.OperationalError:
+            pass  # Column might already exist
 
 def create_tables(conn):
     """Create database tables if they don't exist."""
@@ -43,6 +61,7 @@ def create_tables(conn):
             platform_video_id TEXT NOT NULL,
             title TEXT,
             url TEXT,
+            video_url TEXT,
             view_count INTEGER DEFAULT 0,
             like_count INTEGER DEFAULT 0,
             comment_count INTEGER DEFAULT 0,
@@ -167,21 +186,23 @@ def upsert_videos(creator_id: int, videos: list):
         for video in videos:
             cursor.execute("""
                 INSERT INTO videos (
-                    creator_id, platform_video_id, title, url, view_count,
+                    creator_id, platform_video_id, title, url, video_url, view_count,
                     like_count, comment_count, duration, upload_date,
                     thumbnail, outlier_score, synced_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(creator_id, platform_video_id) DO UPDATE SET
                     view_count = excluded.view_count,
                     like_count = excluded.like_count,
                     comment_count = excluded.comment_count,
                     outlier_score = excluded.outlier_score,
+                    video_url = COALESCE(excluded.video_url, videos.video_url),
                     synced_at = CURRENT_TIMESTAMP
             """, (
                 creator_id,
                 video.get('id') or video.get('platform_video_id'),
                 video.get('title'),
                 video.get('url'),
+                video.get('video_url'),  # Direct video URL for transcription (Instagram)
                 video.get('view_count', 0),
                 video.get('like_count', 0),
                 video.get('comment_count', 0),
@@ -319,3 +340,37 @@ def parse_youtube_url(url: str) -> tuple:
         return ('youtube', username, url)
 
     return ('youtube', 'unknown', url)
+
+
+def parse_instagram_url(url: str) -> tuple:
+    """Parse Instagram URL to extract username."""
+    url = url.strip()
+
+    # Remove trailing slashes and query params
+    url = url.rstrip('/').split('?')[0]
+
+    # Handle instagram.com/username format
+    if 'instagram.com/' in url:
+        parts = url.split('instagram.com/')
+        username = parts[1].split('/')[0]
+        # Clean up username (remove @ if present)
+        username = username.lstrip('@')
+        return ('instagram', username, f"https://www.instagram.com/{username}")
+
+    return ('instagram', 'unknown', url)
+
+
+def parse_creator_url(url: str) -> tuple:
+    """
+    Parse any creator URL and detect platform.
+    Returns: (platform, username, clean_url)
+    """
+    url = url.strip().lower()
+
+    if 'instagram.com' in url:
+        return parse_instagram_url(url)
+    elif 'youtube.com' in url or 'youtu.be' in url:
+        return parse_youtube_url(url)
+    else:
+        # Default to YouTube for backwards compatibility
+        return parse_youtube_url(url)

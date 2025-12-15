@@ -214,12 +214,12 @@ if not is_authed:
         st.stop()
 
 # Import app modules after auth check
-from scraper import YouTubeScraper
+from scraper import YouTubeScraper, InstagramScraper, AssemblyAITranscriber
 from remix_engine import Remixer
 from database import (
     add_creator, remove_creator, get_all_creators, get_creator_by_id,
     upsert_videos, get_videos_for_creator, get_all_outliers, get_video_by_id,
-    save_transcript, save_remix, parse_youtube_url
+    save_transcript, save_remix, parse_youtube_url, parse_instagram_url, parse_creator_url
 )
 
 # ============================================
@@ -568,6 +568,31 @@ if 'selected_video_id' not in st.session_state:
 if 'scraper' not in st.session_state:
     st.session_state.scraper = YouTubeScraper()
 
+# Initialize Instagram scraper if API token available
+def get_instagram_scraper():
+    """Get Instagram scraper instance if Apify token is available."""
+    try:
+        apify_token = st.secrets.get("APIFY_API_TOKEN", "") or os.getenv("APIFY_API_TOKEN", "")
+        if apify_token:
+            return InstagramScraper(apify_token)
+    except Exception:
+        apify_token = os.getenv("APIFY_API_TOKEN", "")
+        if apify_token:
+            return InstagramScraper(apify_token)
+    return None
+
+def get_assemblyai_transcriber():
+    """Get AssemblyAI transcriber if API key available."""
+    try:
+        api_key = st.secrets.get("ASSEMBLYAI_API_KEY", "") or os.getenv("ASSEMBLYAI_API_KEY", "")
+        if api_key:
+            return AssemblyAITranscriber(api_key)
+    except Exception:
+        api_key = os.getenv("ASSEMBLYAI_API_KEY", "")
+        if api_key:
+            return AssemblyAITranscriber(api_key)
+    return None
+
 # ============================================
 # SIDEBAR - API KEYS & SETTINGS
 # ============================================
@@ -600,16 +625,30 @@ with st.sidebar:
             help="For remixing content"
         )
 
+    # Apify API Token for Instagram
     try:
-        openai_key = st.secrets.get("OPENAI_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
+        apify_token = st.secrets.get("APIFY_API_TOKEN", "") or os.getenv("APIFY_API_TOKEN", "")
     except Exception:
-        openai_key = os.getenv("OPENAI_API_KEY", "")
+        apify_token = os.getenv("APIFY_API_TOKEN", "")
 
-    if not openai_key:
-        openai_key = st.text_input(
-            "OpenAI API Key",
+    if not apify_token:
+        apify_token = st.text_input(
+            "Apify API Token",
             type="password",
-            help="For Whisper transcription (TikTok/IG)"
+            help="For Instagram scraping (~$0.003/reel)"
+        )
+
+    # AssemblyAI API Key for transcription
+    try:
+        assemblyai_key = st.secrets.get("ASSEMBLYAI_API_KEY", "") or os.getenv("ASSEMBLYAI_API_KEY", "")
+    except Exception:
+        assemblyai_key = os.getenv("ASSEMBLYAI_API_KEY", "")
+
+    if not assemblyai_key:
+        assemblyai_key = st.text_input(
+            "AssemblyAI API Key",
+            type="password",
+            help="For Instagram transcription (~$0.01/min)"
         )
 
     st.markdown("---")
@@ -631,8 +670,13 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Platform status with better styling
-    st.markdown("""
+    # Platform status with better styling - dynamic based on API keys
+    ig_active = bool(apify_token)
+    ig_color = "#22c55e" if ig_active else "#666"
+    ig_text_color = "#ccc" if ig_active else "#888"
+    ig_glow = "box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);" if ig_active else ""
+
+    st.markdown(f"""
     <div style="margin-bottom: 16px;">
         <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Platform Status</div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -641,12 +685,8 @@ with st.sidebar:
                 <span style="color: #ccc; font-size: 13px;">YouTube</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="width: 8px; height: 8px; background: #666; border-radius: 50%;"></span>
-                <span style="color: #888; font-size: 13px;">TikTok (Apify)</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="width: 8px; height: 8px; background: #666; border-radius: 50%;"></span>
-                <span style="color: #888; font-size: 13px;">Instagram (Apify)</span>
+                <span style="width: 8px; height: 8px; background: {ig_color}; border-radius: 50%; {ig_glow}"></span>
+                <span style="color: {ig_text_color}; font-size: 13px;">Instagram (Apify)</span>
             </div>
         </div>
     </div>
@@ -671,19 +711,34 @@ with st.sidebar:
 # ============================================
 
 def sync_creator(creator_id: int, limit: int = 30):
-    """Sync videos for a creator."""
+    """Sync videos for a creator (YouTube or Instagram)."""
     creator = get_creator_by_id(creator_id)
     if not creator:
         return False
 
-    scraper = st.session_state.scraper
+    platform = creator.get('platform', 'youtube').lower()
 
     with st.spinner(f"Syncing {creator['display_name']}..."):
-        videos = scraper.get_channel_videos(creator['url'], limit=limit)
-        if videos:
-            analyzed = scraper.calculate_outliers(videos)
-            upsert_videos(creator_id, analyzed)
-            return True
+        if platform == 'instagram':
+            # Use Instagram scraper (Apify)
+            ig_scraper = get_instagram_scraper()
+            if not ig_scraper:
+                st.error("Apify API token required for Instagram. Add it in the sidebar.")
+                return False
+
+            videos = ig_scraper.get_reels(creator['username'], limit=limit)
+            if videos:
+                analyzed = ig_scraper.calculate_outliers(videos)
+                upsert_videos(creator_id, analyzed)
+                return True
+        else:
+            # Use YouTube scraper
+            scraper = st.session_state.scraper
+            videos = scraper.get_channel_videos(creator['url'], limit=limit)
+            if videos:
+                analyzed = scraper.calculate_outliers(videos)
+                upsert_videos(creator_id, analyzed)
+                return True
     return False
 
 def sync_all_creators():
@@ -821,10 +876,26 @@ elif st.session_state.current_view == 'watchlist':
 
     # Add Creator Form
     with st.expander("➕ Add Creator", expanded=True):
-        new_url = st.text_input(
-            "YouTube Channel URL",
-            placeholder="https://www.youtube.com/@creatorname"
+        # Platform selection
+        platform_choice = st.radio(
+            "Platform",
+            ["YouTube", "Instagram"],
+            horizontal=True,
+            help="Select the platform"
         )
+
+        if platform_choice == "YouTube":
+            new_url = st.text_input(
+                "YouTube Channel URL",
+                placeholder="https://www.youtube.com/@creatorname"
+            )
+        else:
+            new_url = st.text_input(
+                "Instagram Profile URL",
+                placeholder="https://www.instagram.com/username"
+            )
+            if not apify_token:
+                st.warning("⚠️ Apify API token required for Instagram. Add it in API Keys section above.")
 
         col1, col2 = st.columns([3, 1])
         with col1:
@@ -835,11 +906,12 @@ elif st.session_state.current_view == 'watchlist':
             add_btn = st.button("➕ Add", type="primary", use_container_width=True)
 
         if add_btn and new_url:
-            platform, username, clean_url = parse_youtube_url(new_url)
+            # Use the unified parser
+            platform, username, clean_url = parse_creator_url(new_url)
             creator_id = add_creator(platform, username, clean_url, display_name or username)
 
             if creator_id:
-                st.success(f"Added @{username} to watchlist!")
+                st.success(f"Added @{username} ({platform.upper()}) to watchlist!")
                 # Auto-sync
                 sync_creator(creator_id)
                 st.rerun()
@@ -871,9 +943,10 @@ elif st.session_state.current_view == 'watchlist':
             col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
 
             with col1:
-                platform_icon = "📺" if creator['platform'] == 'youtube' else "📱"
+                platform_icon = "📺" if creator['platform'] == 'youtube' else "📸"
+                content_type = "videos" if creator['platform'] == 'youtube' else "reels"
                 st.markdown(f"**{platform_icon} {creator['display_name']}**")
-                st.caption(f"@{creator['username']} • {creator['platform'].upper()} • {creator['video_count'] or 0} videos")
+                st.caption(f"@{creator['username']} • {creator['platform'].upper()} • {creator['video_count'] or 0} {content_type}")
 
             with col2:
                 if creator.get('last_synced'):
@@ -994,13 +1067,33 @@ elif st.session_state.current_view == 'remix':
                 if transcript_text and has_error:
                     st.warning(transcript_text)
 
-                btn_label = "🔄 Re-fetch Transcript" if has_error else "📥 Fetch Transcript"
-                if st.button(btn_label, type="primary", use_container_width=True):
-                    scraper = st.session_state.scraper
-                    with st.spinner("Fetching transcript..."):
-                        transcript = scraper.get_transcript(video['url'])
-                        save_transcript(video['id'], transcript)
-                        st.rerun()
+                # Determine transcription method based on platform
+                is_instagram = video.get('platform', '').lower() == 'instagram'
+
+                if is_instagram:
+                    btn_label = "🔄 Re-transcribe" if has_error else "🎙️ Transcribe with AssemblyAI"
+                    if not assemblyai_key:
+                        st.warning("⚠️ AssemblyAI API key required for Instagram transcription.")
+                    elif st.button(btn_label, type="primary", use_container_width=True):
+                        transcriber = get_assemblyai_transcriber()
+                        if transcriber:
+                            with st.spinner("Transcribing with AssemblyAI... (may take 30-60s)"):
+                                # Instagram videos need direct video URL
+                                video_url = video.get('video_url') or video.get('url')
+                                transcript = transcriber.transcribe_url(video_url)
+                                save_transcript(video['id'], transcript)
+                                st.rerun()
+                        else:
+                            st.error("AssemblyAI transcriber not available")
+                else:
+                    # YouTube - use free transcript API
+                    btn_label = "🔄 Re-fetch Transcript" if has_error else "📥 Fetch Transcript"
+                    if st.button(btn_label, type="primary", use_container_width=True):
+                        scraper = st.session_state.scraper
+                        with st.spinner("Fetching transcript..."):
+                            transcript = scraper.get_transcript(video['url'])
+                            save_transcript(video['id'], transcript)
+                            st.rerun()
 
         with col_remix:
             st.markdown("""
