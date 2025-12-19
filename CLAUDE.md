@@ -2,6 +2,25 @@
 
 **Last Updated:** 2025-12-15 (Instagram scraping via Apify working)
 
+## ⚠️ CRITICAL: Pre-Compact Context Preservation
+
+**MANDATORY RULE:** Before ANY auto-compact occurs, Claude MUST run `/wrap` to save session context.
+
+**When to trigger:**
+- When you notice context is getting long/heavy
+- When the PreCompact hook fires
+- Before any summarization or compaction
+- If unsure whether compact is imminent, run `/wrap` proactively
+
+**What /wrap does:**
+- Saves key decisions, technical details, and progress to CLAUDE.md
+- Documents incomplete work and next steps
+- Ensures continuity across sessions
+
+**This is non-negotiable.** Context loss degrades work quality. Always preserve before compact.
+
+---
+
 ## Project Overview
 
 Sandcastles.ai alternative for finding viral content outliers and remixing them. **Now deployed to Streamlit Cloud.**

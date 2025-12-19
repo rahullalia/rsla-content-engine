@@ -150,11 +150,11 @@ def show_login():
             color: white;
         }
         .login-logo .slash {
-            width: 7px;
-            height: 24px;
+            width: 6px;
+            height: 21px;
             background: linear-gradient(180deg, #0070f3 0%, #00a0ff 100%);
             transform: skewX(-20deg);
-            margin: 0 4px;
+            margin: 0 -1px 0 6px;
             display: inline-block;
             box-shadow: 0 0 15px rgba(0, 112, 243, 0.6);
         }
@@ -508,11 +508,11 @@ st.markdown("""
         color: white;
     }
     .rsla-logo .slash {
-        width: 6px;
-        height: 20px;
+        width: 5px;
+        height: 18px;
         background: linear-gradient(180deg, #0070f3 0%, #00a0ff 100%);
         transform: skewX(-20deg);
-        margin: 0 3px;
+        margin: 0 -1px 0 5px;
         display: inline-block;
         box-shadow: 0 0 10px rgba(0, 112, 243, 0.5);
     }
